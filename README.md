@@ -30,7 +30,7 @@ provider "proxmox" {
 
 ```hcl
 module "proxmox_vm" {
-  source = "./modules/proxmox-vm"
+  source = "github.com/lorenzo-christopher/terraform-proxmox-vm"
 
   vm_name          = "example-vm"
   description      = "Demo VM"
