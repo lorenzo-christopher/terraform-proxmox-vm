@@ -3,89 +3,69 @@ terraform {
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
-      version = ">=0.53.1"
+      version = ">=0.99.0"
     }
   }
 }
 
-resource "proxmox_virtual_environment_vm" "vm" {
+resource "proxmox_cloned_vm" "cloned_vm" {
   name        = var.vm_name
-  description = var.description
-  tags        = var.tags
+  description = var.vm_description
+  tags        = var.vm_tags
   node_name   = var.pve_node_name
-  vm_id       = var.vm_id
-  bios        = var.bios
-  on_boot     = var.on_boot
+  id          = var.vm_id
 
-  operating_system {
-    type = var.os_type
+  clone = {
+    source_vm_id     = var.source_vm_id
+    source_node_name = var.source_node_name
+    full             = var.full_clone
+    target_datastore = var.target_datastore
   }
 
-  clone {
-    node_name = var.template_node
-    vm_id     = var.template_vm_id
-    full      = var.full_clone
-  }
-
-  agent {
-    enabled = var.qemu_guest_agent
-  }
-
-  cpu {
+  cpu = {
     cores   = var.cpu_cores
     sockets = var.cpu_sockets
-    type    = var.cpu_type
+    # architecture = "x86_64"
+    type = var.cpu_type
   }
 
-  memory {
-    dedicated = var.memory_dedicated
-    floating  = var.memory_floating
+  memory = {
+    size    = var.memory_size
+    balloon = var.memory_ballooned
   }
 
-  scsi_hardware = var.scsi_hardware
-
-  dynamic "disk" {
-    for_each = var.disks
-    content {
-      datastore_id = disk.value.datastore_id
-      interface    = disk.value.interface
-      ssd          = disk.value.ssd
-      discard      = disk.value.discard
-      iothread     = disk.value.iothread
-      size         = disk.value.size
+  disk = {
+    scsi0 = {
+      datastore_id = var.disk_datastore_id
+      interface    = var.disk_interface
+      ssd          = var.disk_ssd
+      discard      = var.disk_discard
+      iothread     = var.disk_iothread
+      size_gb      = var.disk_size_gb
+      cache        = var.disk_cache
     }
   }
 
-  dynamic "efi_disk" {
-    for_each = (var.bios == "ovmf" ? [1] : [])
-    content {
-      datastore_id      = var.efi_datastore_id
-      type              = var.efi_disk_type
-      pre_enrolled_keys = var.efi_pre_enrolled_keys
-    }
+  # Lifecycle options
+  stop_on_destroy                      = false
+  purge_on_destroy                     = true
+  delete_unreferenced_disks_on_destroy = true
+
+  timeouts = {
+    create = "30m"
+    update = "30m"
+    delete = "10m"
   }
 
-  initialization {
-    datastore_id = var.ci_datastore_id
-
-    dns {
-      domain  = var.ci_dns_domain
-      servers = var.ci_dns_servers
+  network = {
+    net0 = {
+      bridge   = var.network_bridge
+      model    = var.network_model
+      tag      = var.vlan_tag
+      firewall = var.firewall_enabled
     }
-
-    ip_config {
-      ipv4 {
-        address = var.ci_ipv4_cidr
-        gateway = var.ci_ipv4_gateway
-      }
-    }
-  }
-
-  network_device {
-    bridge   = var.vnic_bridge
-    model    = var.vnic_model
-    vlan_id  = var.vlan_tag
-    firewall = var.firewall_enabled
   }
 }
+
+
 

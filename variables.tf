@@ -5,13 +5,13 @@ variable "vm_name" {
   default     = null
 }
 
-variable "description" {
+variable "vm_description" {
   description = "Description of the virtual machine"
   type        = string
   default     = "Managed by Terraform"
 }
 
-variable "tags" {
+variable "vm_tags" {
   description = "Tags to assign to the virtual machine"
   type        = list(string)
   default     = []
@@ -24,57 +24,34 @@ variable "pve_node_name" {
 }
 
 variable "vm_id" {
-  description = "VM ID (automatically assigned if not specified)"
+  description = "VM ID (should automatically assigned if not specified)"
   type        = number
   default     = null
 }
 
-variable "bios" {
-  description = "BIOS type, setting to `ovmf` will automatically create a EFI disk."
-  type        = string
-  default     = "seabios"
-  validation {
-    condition     = contains(["seabios", "ovmf"], var.bios)
-    error_message = "Invalid bios setting: ${var.bios}. Valid options: 'seabios' or 'ovmf'."
-  }
-}
-
-variable "on_boot" {
-  description = "Start VM on Proxmox host boot."
-  type        = bool
-  default     = false
-}
-
-variable "os_type" {
-  description = "Guest operating system type"
-  type        = string
-  default     = "l26"
-}
-
 ### Clone Configuration
-variable "template_node" {
-  description = "Name of Proxmox node where the template resides"
-  type        = string
-  default     = null # same node as the target node `var.pve_node_name` above
+variable "source_vm_id" {
+  description = "ID of the source VM to clone from"
+  type        = number
+  default     = null
 }
 
-variable "template_vm_id" {
-  description = "VM ID of the template to clone from"
-  type        = number
+variable "source_node_name" {
+  description = "Name of the Proxmox node where the source VM is located (defaults to target node if omitted)"
+  type        = string
   default     = null
 }
 
 variable "full_clone" {
-  description = "Whether to perform a full clone of the template"
+  description = "Whether to perform a full clone (true) or linked clone (false)"
   type        = bool
   default     = true
 }
 
-### QEMU Guest Agent
-variable "qemu_guest_agent" {
-  description = "Enable QEMU guest agent."
-  type        = bool
-  default     = true
+variable "target_datastore" {
+  description = "Datastore ID to use for the cloned VM"
+  type        = string
+  default     = null
 }
 
 ### CPU Configuration
@@ -97,105 +74,69 @@ variable "cpu_type" {
 }
 
 ### Memory Configuration
-variable "memory_dedicated" {
-  description = "Dedicated memory in MB"
+variable "memory_size" {
+  description = "Total memory available to VM (in MB)"
   type        = number
   default     = 2048
 }
 
-variable "memory_floating" {
-  description = "Minimum memory size in `MiB`, setting this value enables memory ballooning."
+variable "memory_ballooned" {
+  description = "Minimum guaranteed memory via balloon device (in MB)"
   type        = number
   default     = 2048
 }
 
 ### Disk Configuration
-variable "scsi_hardware" {
-  description = "Storage controller, e.g. `virtio-scsi-pci`."
-  type        = string
-  default     = "virtio-scsi-single"
-}
-
-variable "disks" {
-  description = "List of disk configurations."
-  type = list(object({
-    datastore_id = optional(string, "local-lvm")
-    interface    = optional(string, "scsi0")
-    ssd          = optional(bool, true)
-    discard      = optional(string, "on")
-    iothread     = optional(bool, true)
-    size         = optional(number, 32)
-  }))
-
-
-  default = [{
-    datastore_id = "local-lvm"
-    interface    = "scsi0"
-    ssd          = true
-    discard      = "on"
-    iothread     = true
-    size         = 32
-  }]
-}
-
-### EFI Disk Configuration
-variable "efi_datastore_id" {
-  description = "EFI disk storage location."
+variable "disk_datastore_id" {
+  description = "Datastore ID for the primary disk."
   type        = string
   default     = "local-lvm"
 }
 
-variable "efi_disk_type" {
-  description = "EFI disk OVMF firmware version."
+variable "disk_interface" {
+  description = "Disk interface type (e.g., scsi, sata, virtio)"
   type        = string
-  default     = "4m"
+  default     = "scsi0"
 }
 
-variable "efi_pre_enrolled_keys" {
-  description = "Use pre-enrolled keys for Secure Boot"
+variable "disk_ssd" {
+  description = "Whether the disk is on an SSD datastore (true/false)"
   type        = bool
-  default     = false
+  default     = true
 }
 
-### Cloud-init Variables
-variable "ci_datastore_id" {
-  description = "Datastore ID for cloud-init disk."
+variable "disk_discard" {
+  description = "Whether to enable discard/TRIM support for the disk (true/false)"
+  type        = bool
+  default     = true
+}
+
+variable "disk_iothread" {
+  description = "Whether to enable IOThread for the disk (true/false)"
+  type        = bool
+  default     = true
+}
+
+variable "disk_size_gb" {
+  description = "Size of the disk in GB"
+  type        = number
+  default     = 32
+}
+
+variable "disk_cache" {
+  description = "Disk cache"
   type        = string
-  default     = "local-lvm"
-}
-
-variable "ci_dns_domain" {
-  description = "DNS domain name. Default `null` value will use PVE host settings."
-  type        = string
-  default     = null
-}
-
-variable "ci_dns_servers" {
-  description = "DNS servers. Default `null` value will use PVE host settings."
-  type        = list(string)
-  default     = ["8.8.8.8"]
-}
-
-variable "ci_ipv4_cidr" {
-  description = "Default uses DHCP, for a static address set CIDR, e.g. `192.168.1.254/24`."
-  type        = string
-  default     = "dhcp"
-}
-
-variable "ci_ipv4_gateway" {
-  description = "IPv4 gateway, required if `var.ci_ipv4_cidr` is set to a static address."
-  type        = string
-  default     = null
+  default     = "writethrough"
 }
 
 ### Network Variables
-variable "vnic_bridge" {
+variable "network_bridge" {
   description = "Networking adapter bridge, e.g. `vmbr0`."
   type        = string
   default     = "vmbr0"
 }
 
-variable "vnic_model" {
+variable "network_model" {
   description = "Networking adapter model, e.g. `virtio`."
   type        = string
   default     = "virtio"
