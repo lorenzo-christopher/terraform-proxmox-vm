@@ -31,7 +31,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   agent {
     enabled = var.qemu_guest_agent
     wait_for_ip {
-      enabled = var.qemu_guest_agent_wait_for_ip
+      disabled = var.qemu_guest_agent_wait_for_ip
     }
   }
 
