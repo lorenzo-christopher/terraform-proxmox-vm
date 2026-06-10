@@ -70,11 +70,23 @@ variable "full_clone" {
   default     = true
 }
 
+variable "clone_retries" {
+  description = "Number of retries for cloning operation in case of failure"
+  type        = number
+  default     = 3
+}
+
 ### QEMU Guest Agent
 variable "qemu_guest_agent" {
   description = "Enable QEMU guest agent."
   type        = bool
   default     = true
+}
+
+variable "qemu_guest_agent_wait_for_ip" {
+  description = "Wait for IP address from QEMU guest agent (disabled by default to speed up provisioning)."
+  type        = bool
+  default     = false
 }
 
 ### CPU Configuration
@@ -127,15 +139,16 @@ variable "disks" {
     size         = optional(number, 32)
   }))
 
+  default = []
 
-  default = [{
-    datastore_id = "local-lvm"
-    interface    = "scsi0"
-    ssd          = true
-    discard      = "on"
-    iothread     = true
-    size         = 32
-  }]
+  # default = [{
+  #   datastore_id = "local-lvm"
+  #   interface    = "scsi0"
+  #   ssd          = true
+  #   discard      = "on"
+  #   iothread     = true
+  #   size         = 32
+  # }]
 }
 
 ### EFI Disk Configuration
@@ -189,26 +202,40 @@ variable "ci_ipv4_gateway" {
 }
 
 ### Network Variables
-variable "vnic_bridge" {
-  description = "Networking adapter bridge, e.g. `vmbr0`."
-  type        = string
-  default     = "vmbr0"
+# variable "vnic_bridge" {
+#   description = "Networking adapter bridge, e.g. `vmbr0`."
+#   type        = string
+#   default     = "vmbr0"
+# }
+
+# variable "vnic_model" {
+#   description = "Networking adapter model, e.g. `virtio`."
+#   type        = string
+#   default     = "virtio"
+# }
+
+# variable "vlan_tag" {
+#   description = "Networking adapter VLAN tag."
+#   type        = number
+#   default     = null
+# }
+
+# variable "firewall_enabled" {
+#   description = "Enable Proxmox firewall for this VM."
+#   type        = bool
+#   default     = false
+# }
+
+variable "network_devices" {
+  description = "List of network devices (NICs)"
+  type = list(object({
+    bridge   = optional(string, "vmbr0")
+    model    = optional(string, "virtio")
+    vlan_id  = optional(number, null)
+    firewall = optional(bool, false)
+  }))
+
+  default = []
 }
 
-variable "vnic_model" {
-  description = "Networking adapter model, e.g. `virtio`."
-  type        = string
-  default     = "virtio"
-}
 
-variable "vlan_tag" {
-  description = "Networking adapter VLAN tag."
-  type        = number
-  default     = null
-}
-
-variable "firewall_enabled" {
-  description = "Enable Proxmox firewall for this VM."
-  type        = bool
-  default     = false
-}

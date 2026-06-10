@@ -3,7 +3,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
-      version = ">=0.53.1"
+      version = ">=0.99.0"
     }
   }
 }
@@ -25,10 +25,14 @@ resource "proxmox_virtual_environment_vm" "vm" {
     node_name = var.template_node
     vm_id     = var.template_vm_id
     full      = var.full_clone
+    retries   = var.clone_retries
   }
 
   agent {
     enabled = var.qemu_guest_agent
+    wait_for_ip {
+      enabled = var.qemu_guest_agent_wait_for_ip
+    }
   }
 
   cpu {
@@ -79,13 +83,35 @@ resource "proxmox_virtual_environment_vm" "vm" {
         gateway = var.ci_ipv4_gateway
       }
     }
+
+
+    # dynamic "ip_config" {
+    #   for_each = var.ci_ipv4_cidr != "" ? [1] : []
+    #   content {
+    #     ipv4 {
+    #       address = var.ci_ipv4_cidr
+    #       gateway = var.ci_ipv4_gateway
+    #     }
+    #   }
+    # }
   }
 
-  network_device {
-    bridge   = var.vnic_bridge
-    model    = var.vnic_model
-    vlan_id  = var.vlan_tag
-    firewall = var.firewall_enabled
+  # network_device {
+  #   bridge   = var.vnic_bridge
+  #   model    = var.vnic_model
+  #   vlan_id  = var.vlan_tag
+  #   firewall = var.firewall_enabled
+  # }
+
+
+  dynamic "network_device" {
+    for_each = var.network_devices
+    content {
+      bridge   = network_device.value.bridge
+      model    = network_device.value.model
+      vlan_id  = network_device.value.vlan_id
+      firewall = network_device.value.firewall
+    }
   }
 }
 
