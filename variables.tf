@@ -45,6 +45,12 @@ variable "on_boot" {
   default     = false
 }
 
+variable "stop_on_destroy" {
+  description = "Stop the VM before destroying it."
+  type        = bool
+  default     = true
+}
+
 variable "os_type" {
   description = "Guest operating system type"
   type        = string
@@ -86,7 +92,7 @@ variable "qemu_guest_agent" {
 variable "qemu_guest_agent_wait_for_ip" {
   description = "Wait for IP address from QEMU guest agent (disabled by default to speed up provisioning)."
   type        = bool
-  default     = false
+  default     = true # skip the agent IP lookup 
 }
 
 ### CPU Configuration
@@ -140,15 +146,6 @@ variable "disks" {
   }))
 
   default = []
-
-  # default = [{
-  #   datastore_id = "local-lvm"
-  #   interface    = "scsi0"
-  #   ssd          = true
-  #   discard      = "on"
-  #   iothread     = true
-  #   size         = 32
-  # }]
 }
 
 ### EFI Disk Configuration
@@ -200,31 +197,6 @@ variable "ci_ipv4_gateway" {
   type        = string
   default     = null
 }
-
-### Network Variables
-# variable "vnic_bridge" {
-#   description = "Networking adapter bridge, e.g. `vmbr0`."
-#   type        = string
-#   default     = "vmbr0"
-# }
-
-# variable "vnic_model" {
-#   description = "Networking adapter model, e.g. `virtio`."
-#   type        = string
-#   default     = "virtio"
-# }
-
-# variable "vlan_tag" {
-#   description = "Networking adapter VLAN tag."
-#   type        = number
-#   default     = null
-# }
-
-# variable "firewall_enabled" {
-#   description = "Enable Proxmox firewall for this VM."
-#   type        = bool
-#   default     = false
-# }
 
 variable "network_devices" {
   description = "List of network devices (NICs)"

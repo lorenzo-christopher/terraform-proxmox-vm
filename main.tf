@@ -9,13 +9,14 @@ terraform {
 }
 
 resource "proxmox_virtual_environment_vm" "vm" {
-  name        = var.vm_name
-  description = var.description
-  tags        = var.tags
-  node_name   = var.pve_node_name
-  vm_id       = var.vm_id
-  bios        = var.bios
-  on_boot     = var.on_boot
+  name            = var.vm_name
+  description     = var.description
+  tags            = var.tags
+  node_name       = var.pve_node_name
+  vm_id           = var.vm_id
+  bios            = var.bios
+  on_boot         = var.on_boot
+  stop_on_destroy = var.stop_on_destroy
 
   operating_system {
     type = var.os_type
@@ -95,14 +96,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
     #   }
     # }
   }
-
-  # network_device {
-  #   bridge   = var.vnic_bridge
-  #   model    = var.vnic_model
-  #   vlan_id  = var.vlan_tag
-  #   firewall = var.firewall_enabled
-  # }
-
 
   dynamic "network_device" {
     for_each = var.network_devices
